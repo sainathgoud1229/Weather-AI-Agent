@@ -10,7 +10,7 @@ from langchain.agents import (
     create_react_agent,
     AgentExecutor
 )
-from langchain import hub
+from langchain.prompts import PromptTemplate
 
 from langchain_community.tools.tavily_search import TavilySearchResults
 
@@ -75,57 +75,68 @@ def get_weather_data(city: str) -> str:
 
 
 # ==========================================
-# LLM
+# LLM + AGENT (cached so it loads once only)
 # ==========================================
 
-# Fix for asyncio event loop error in Streamlit thread
-import asyncio
-try:
-    asyncio.get_running_loop()
-except RuntimeError:
-    asyncio.set_event_loop(asyncio.new_event_loop())
+@st.cache_resource
+def load_agent():
+    # Fix for asyncio event loop error in Streamlit thread
+    import asyncio
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=0,
-    api_key=GOOGLE_API_KEY
-)
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=0,
+        api_key=GOOGLE_API_KEY
+    )
 
-# ==========================================
-# PROMPT
-# ==========================================
+    # Hardcoded ReAct prompt (replaces slow hub.pull() network call)
+    react_template = """Answer the following questions as best you can. You have access to the following tools:
 
-prompt = hub.pull("hwchase17/react")
+{tools}
 
-# ==========================================
-# TOOLS
-# ==========================================
+Use the following format:
 
-tools = [
-    search_tool,
-    get_weather_data
-]
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
 
-# ==========================================
-# CREATE AGENT
-# ==========================================
+Begin!
 
-agent = create_react_agent(
-    llm=llm,
-    tools=tools,
-    prompt=prompt
-)
+Question: {input}
+Thought:{agent_scratchpad}"""
 
-# ==========================================
-# EXECUTOR
-# ==========================================
+    prompt = PromptTemplate.from_template(react_template)
 
-agent_executor = AgentExecutor(
-    agent=agent,
-    tools=tools,
-    verbose=True,
-    handle_parsing_errors=True
-)
+    tools = [
+        search_tool,
+        get_weather_data
+    ]
+
+    agent = create_react_agent(
+        llm=llm,
+        tools=tools,
+        prompt=prompt
+    )
+
+    agent_executor = AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        handle_parsing_errors=True
+    )
+
+    return agent_executor
+
+agent_executor = load_agent()
 
 # ==========================================
 # UI INPUT
