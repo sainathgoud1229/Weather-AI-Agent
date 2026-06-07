@@ -4,7 +4,7 @@ import streamlit as st
 import certifi
 from dotenv import load_dotenv
 
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.tools import tool
 from langchain.agents import (
     create_react_agent,
@@ -18,9 +18,9 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 # LOAD ENV VARIABLES
 # ==========================================
 os.environ["SSL_CERT_FILE"] = certifi.where()
-load_dotenv()
+load_dotenv(override=True)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 WEATHERSTACK_API_KEY = os.getenv("WEATHERSTACK_API_KEY")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
@@ -78,10 +78,17 @@ def get_weather_data(city: str) -> str:
 # LLM
 # ==========================================
 
-llm = ChatOpenAI(
-    model="gpt-3.5-turbo",
+# Fix for asyncio event loop error in Streamlit thread
+import asyncio
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
     temperature=0,
-    api_key=OPENAI_API_KEY
+    api_key=GOOGLE_API_KEY
 )
 
 # ==========================================
@@ -154,3 +161,4 @@ if st.button("Run Agent"):
 
     else:
         st.warning("Please enter a query")
+        

@@ -1,5 +1,7 @@
 # Langchain Agent
 
+![Agentic AI Assistant](screenshot.png)
+
 A minimal LangChain-based agent project built for experimentation and learning. This repository demonstrates how to set up a Python environment, install dependencies, and run a simple agent-driven application using environment-based API keys.
 
 ## Features
@@ -13,7 +15,8 @@ A minimal LangChain-based agent project built for experimentation and learning. 
 
 - Python 3.11
 - LangChain
-- OpenAI API
+- Google Gemini API (gemini-2.5-flash)
+- Streamlit
 - dotenv for environment configuration
 
 ## Architecture
@@ -52,7 +55,7 @@ pip install -r requirements.txt
 Create a `.env` file at the repository root and add your API keys:
 
 ```dotenv
-OPENAI_API_KEY="your-openai-api-key"
+GOOGLE_API_KEY="AIzaSy-your-gemini-api-key"
 TAVILY_API_KEY="your-tavily-api-key"
 WEATHERSTACK_API_KEY="your-weatherstack-api-key"
 ```
@@ -61,13 +64,13 @@ WEATHERSTACK_API_KEY="your-weatherstack-api-key"
 
 ### Run the Project
 
-Use one of the Python entrypoints:
+Run the Streamlit web application:
 
 ```bash
-python app.py
+streamlit run app.py
 ```
 
-or
+Or run the terminal CLI version:
 
 ```bash
 python main.py
